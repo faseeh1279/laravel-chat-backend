@@ -13,11 +13,13 @@ class Conversation extends Model
         'user_id', 
     ];
 
-    public function user(): BelongsToMany
+    public function users(): BelongsToMany
     {
-        return $this->BelongsToMany(User::class);
+        return $this->belongsToMany(
+            User::class,
+            'conversation_user'
+        )->withTimestamps();
     }
-
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class);

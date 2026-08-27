@@ -6,27 +6,27 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User; 
 use App\Models\Conversation; 
-use App\Models\Message; 
-
+use App\Models\Message;
+use App\Services\ConversationService;
+use App\Http\Resources\ConversationResource; 
 
 class ConversationController extends Controller
 {
-    public function index(Request $request)
-    {
-        $user = $request->user();
-
-        $conversations = $user->conversations()
-            ->with([
-                'users',
-                'messages' => function ($query) {
-                    $query->latest()->limit(1);
-                }
-            ])
-            ->get();
-
-        return response()->json($conversations);
+    public function __construct(
+        private ConversationService $conversationService
+    ) {
     }
-
+   public function index(Request $request)
+    {
+        $conversations =
+            $this->conversationService
+                ->getAllConversations(
+                    $request->user()
+                );
+        return ConversationResource::collection(
+            $conversations
+        );
+    }
     /**
      * Open a conversation with another user.
      *

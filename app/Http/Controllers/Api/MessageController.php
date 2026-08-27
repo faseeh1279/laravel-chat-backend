@@ -5,9 +5,17 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Conversation; 
+use App\Services\MessageService;
+use App\Http\Resources\MessageResource;
+use App\Events\MessageSent;
 
 class MessageController extends Controller
 {
+    public function __construct(
+        private MessageService $messageService
+    ) {
+    }
+
     /**
      * Get messages for a conversation.
      */
@@ -15,24 +23,12 @@ class MessageController extends Controller
         Request $request,
         Conversation $conversation
     ) {
-        $user = $request->user();
+        $messages = $this->messageService->getMessages(
+            $request->user(),
+            $conversation
+        );
 
-        $isParticipant = $conversation->users()
-            ->where('users.id', $user->id)
-            ->exists();
-
-        if (!$isParticipant) {
-            return response()->json([
-                'message' => 'Unauthorized.'
-            ], 403);
-        }
-
-        $messages = $conversation->messages()
-            ->with('user:id,name')
-            ->oldest()
-            ->get();
-
-        return response()->json($messages);
+        return MessageResource::collection($messages);
     }
 
     /**
@@ -44,9 +40,6 @@ class MessageController extends Controller
     ) {
         $user = $request->user();
 
-        /*
-         * Make sure sender belongs to conversation.
-         */
         $isParticipant = $conversation->users()
             ->where('users.id', $user->id)
             ->exists();
@@ -67,6 +60,9 @@ class MessageController extends Controller
         ]);
 
         $message->load('user:id,name');
+
+        // Broadcast message in real time
+        broadcast(new MessageSent($message));
 
         return response()->json([
             'message' => 'Message sent successfully.',
