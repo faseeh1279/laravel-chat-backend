@@ -12,7 +12,7 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use App\Models\Message;
 
-class MessageSent implements ShouldBroadcastNow
+class MessageSent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -26,7 +26,7 @@ class MessageSent implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
        return [
-            new Channel(
+            new PrivateChannel(
                 'conversation.' . $this->message->conversation_id
             ),
         ];
